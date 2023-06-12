@@ -38,9 +38,11 @@ const images = [
   require('./src/imgs/buttons/cancel_disable.png'),
 
   /*Backgrounds*/
-  require('./src/imgs/backgrounds/battle_bottom.png'),
   require('./src/imgs/backgrounds/battle_top.png'),
-  require('./src/imgs/backgrounds/battle_center.png'),
+  require('./src/imgs/backgrounds/battle_bottom.png'),
+  require('./src/imgs/backgrounds/battle_cloud.png'),
+  require('./src/imgs/backgrounds/battle_sky.png'),
+  require('./src/imgs/backgrounds/book_left.png'),
 ];
 
 export default function App() {

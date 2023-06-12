@@ -6,7 +6,7 @@ import pieceApi from '../../apis/pieceApi';
 const boardSize = 10;
 const screenWidth = Dimensions.get('window').width;
 const boardWidth = (screenWidth-34%2 !== 0) ? screenWidth-35 : screenWidth-34;
-const headerHeight = 140;
+const headerHeight = 130;
 const boardSizeDatas = {
   boardWidth    : boardWidth,
   boardHeight   : boardWidth,
@@ -813,26 +813,34 @@ const Element = React.forwardRef((props, ref) => {
 
 const Battle = (props) => {
   const bg_assets = {
-    top     : require('../../imgs/backgrounds/battle_top.png'),
-    center  : require('../../imgs/backgrounds/battle_center.png'),
+    top : require('../../imgs/backgrounds/battle_top.png'),
+    cloud : require('../../imgs/backgrounds/battle_sky.png'),
+    sky : require('../../imgs/backgrounds/battle_cloud.png'),
     bottom  : require('../../imgs/backgrounds/battle_bottom.png'),
   }
 
   return (
     <View style={battle.container}>
-      <View style={{height: 28, position: 'absolute', width: '100%', top:0, zIndex: 1}}>
-        <ImageBackground source={bg_assets.top} style={{ flex: 1}}>
+      <View style={{flex:1}}>
+        <ImageBackground source={bg_assets.top} style={{
+          flex: 1, position:'absolute', width:'100%', height:6, top:0, zIndex:15
+        }} resizeMode="repeat">
         </ImageBackground>
-      </View>
 
-      <View style={{flex: 1}}>
-        <ImageBackground source={bg_assets.center} style={{ flex: 1}}>
+        <ImageBackground source={bg_assets.cloud} style={{
+          flex: 1, position:'absolute', width:'100%', height:'100%'
+        }}>
         </ImageBackground>
-      </View>
 
-      <View style={{height: 32, position: 'absolute', width: '100%', bottom:0}}>
-        <ImageBackground source={bg_assets.bottom} style={{ flex: 1}}>
+        <ImageBackground source={bg_assets.sky} style={{
+          flex: 1, position:'absolute', width:'100%', height:'100%'
+        }}>
         </ImageBackground>
+
+        <View style={{height: 32, position: 'absolute', width: '100%', bottom:0}}>
+          <ImageBackground source={bg_assets.bottom} style={{ flex: 1}}>
+          </ImageBackground>
+        </View>
       </View>
     </View>
   )
@@ -1118,8 +1126,6 @@ const status = StyleSheet.create({
     borderWidth: 1,
     paddingLeft:8,
     paddingRight:8,
-    paddingTop:4,
-    paddingBottom:4
   },
   status : {
     borderWidth: 1,
@@ -1137,7 +1143,7 @@ const status = StyleSheet.create({
 
 const battle = StyleSheet.create({
   container : {
-    flex:1
+    flex:1,
   }
 });
 
