@@ -44,6 +44,7 @@ const button_assets = {
 };
 
 const status_assets = {
+  back    : require('../../imgs/backgrounds/controller_bg.png'),
   attack  : require('../../imgs/icons/status/attack.png'),
   defend  : require('../../imgs/icons/status/defend.png'),
   recover : require('../../imgs/icons/status/recover.png'),
@@ -131,7 +132,7 @@ class Header extends Component {
           </View>
 
           <View style={header.setting}>
-            <Text>설정</Text>
+            <Text style={header.label}>Option</Text>
           </View>
         </View>
       </View>
@@ -336,19 +337,21 @@ class Board extends Component {
           </View>
         </ImageBackground>
 
-        <Status
-          user={this.props.user}
-          status={this.props.status}
-          boardConsider={this.state.consider}
-          decidedPiece={this.decidedPiece}
-          cancelPiece={this.cancelPiece}
-        />
+        <ImageBackground source={status_assets.back} resizeMode="stretch">
+          <Status
+            user={this.props.user}
+            status={this.props.status}
+            boardConsider={this.state.consider}
+            decidedPiece={this.decidedPiece}
+            cancelPiece={this.cancelPiece}
+          />
 
-        <PieceContoll
-          ref={this.contollerRef}
-          releasePiece = {this.releasePiece}
-          boardConsider={this.state.consider}
-        />
+          <PieceContoll
+            ref={this.contollerRef}
+            releasePiece = {this.releasePiece}
+            boardConsider={this.state.consider}
+          />
+        </ImageBackground>
       </View>
     )
   }
@@ -977,9 +980,8 @@ const StatusBar = (props) => {
       marginLeft: 6,
       marginRight: 4,
       fontWeight: 'bold',
-      fontSize: 20,
+      fontSize: 22,
       letterSpacing: 2,
-      paddingTop: 2,
       color: "#141414"
     }
   });
@@ -1112,15 +1114,14 @@ const piece = StyleSheet.create({
     position: 'absolute',
     width : boardSizeDatas.elementWidth*2 + 2 + 14,
     height: boardSizeDatas.elementWidth*2 + 2 + 14,
-    right: 25, //controller.container.paddingRight - 위에 절반
+    right: 41, //controller.container.paddingRight - 위에 절반
   },
   controller : {
     whole : {
-      height:boardSizeDatas.elementWidth*3 + 8,
+      height:(boardSizeDatas.elementWidth*3) + (boardSizeDatas.elementWidth/1.5),
       width:'100%',
       flexDirection:'row',
-      paddingTop: 4,
-      paddingBottom: 4,
+      paddingBottom:boardSizeDatas.elementWidth/1.5,
     },
     container : {
       flexDirection:'row',
@@ -1128,7 +1129,7 @@ const piece = StyleSheet.create({
       alignItems:'center',
       justifyContent:'flex-end',
       flexWrap: 'nowrap',
-      paddingRight: 32,
+      paddingRight: 48,
     }
   }
 })
@@ -1186,11 +1187,10 @@ const board = StyleSheet.create({
 
 const status = StyleSheet.create({
   container : {
-    borderWidth: 1,
     paddingLeft:16,
     paddingRight:16,
-    paddingTop: 4,
-    paddingBottom: 4
+    paddingTop: boardSizeDatas.elementWidth/1.5,
+    paddingBottom: 4,
   },
   status : {
     borderWidth: 1,
@@ -1201,7 +1201,6 @@ const status = StyleSheet.create({
     justifyContent:'center'
   },
   userstats : {
-    borderWidth: 1,
     flex:1
   }
 });

@@ -41,6 +41,7 @@ const images = [
   require('./src/imgs/backgrounds/book_left.png'),
   require('./src/imgs/backgrounds/tile.png'),
   require('./src/imgs/backgrounds/board/origbig.png'),
+  require('./src/imgs/backgrounds/controller_bg.png'),
 
   /*Controll Images*/
   require('./src/imgs/buttons/cancel_press_in.png'),
