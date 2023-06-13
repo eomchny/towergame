@@ -18,11 +18,7 @@ const images = [
   require('./src/imgs/icons/element_defend.png'),
   require('./src/imgs/icons/element_recover.png'),
   require('./src/imgs/icons/element_gold.png'),
-  require('./src/imgs/icons/background.png'),
-  require('./src/imgs/buttons/left_button.png'),
-  require('./src/imgs/buttons/right_button.png'),
-  require('./src/imgs/buttons/horizontal_button.png'),
-  require('./src/imgs/buttons/vertical_button.png'),
+  require('./src/imgs/icons/frame.png'),
 
   /*Status*/
   require('./src/imgs/icons/status/attack.png'),
@@ -43,6 +39,26 @@ const images = [
   require('./src/imgs/backgrounds/battle_cloud.png'),
   require('./src/imgs/backgrounds/battle_sky.png'),
   require('./src/imgs/backgrounds/book_left.png'),
+  require('./src/imgs/backgrounds/tile.png'),
+  require('./src/imgs/backgrounds/board/origbig.png'),
+
+  /*Controll Images*/
+  require('./src/imgs/buttons/cancel_press_in.png'),
+  require('./src/imgs/buttons/cancel_press_out.png'),
+  require('./src/imgs/buttons/decide_press_in.png'),
+  require('./src/imgs/buttons/decide_press_out.png'),
+  require('./src/imgs/buttons/rotate_left_press_in.png'),
+  require('./src/imgs/buttons/rotate_left_press_out.png'),
+  require('./src/imgs/buttons/rotate_right_press_in.png'),
+  require('./src/imgs/buttons/rotate_right_press_out.png'),
+  require('./src/imgs/buttons/rotate_vertical_press_in.png'),
+  require('./src/imgs/buttons/rotate_vertical_press_out.png'),
+  require('./src/imgs/buttons/rotate_horizontal_press_in.png'),
+  require('./src/imgs/buttons/rotate_horizontal_press_out.png'),
+
+  /*Character*/
+  require('./src/imgs/character/moving_0.png'),
+  require('./src/imgs/character/moving_1.png'),
 ];
 
 export default function App() {
@@ -58,6 +74,7 @@ export default function App() {
       await Font.loadAsync({
         'Dot-font': require('./src/fonts/DotGothic16-Regular.ttf'),
         'Ancient': require('./src/fonts/Ancient.ttf'),
+        'Dungeon': require('./src/fonts/DungeonFont.ttf'),
       });
     };
 

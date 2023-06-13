@@ -20,20 +20,28 @@ const element_assets = {
   defend  : require('../../imgs/icons/element_defend.png'),
   recover : require('../../imgs/icons/element_recover.png'),
   gold    : require('../../imgs/icons/element_gold.png'),
-  back    : require('../../imgs/icons/background.png')
+  frame   : require('../../imgs/icons/frame.png')
 };
 
 const button_assets = {
-  left       : require('../../imgs/buttons/left_button.png'),
-  right      : require('../../imgs/buttons/right_button.png'),
-  horizontal : require('../../imgs/buttons/horizontal_button.png'),
-  vertical   : require('../../imgs/buttons/vertical_button.png'),
-  /**/
   decide_available : require('../../imgs/buttons/decide_available.png'),
   decide_disable   : require('../../imgs/buttons/decide_disable.png'),
   cancel_available : require('../../imgs/buttons/cancel_available.png'),
   cancel_disable   : require('../../imgs/buttons/cancel_disable.png'),
-}
+  /*Controll_buttons*/
+  cancel_press_in             : require('../../imgs/buttons/cancel_press_in.png'),
+  cancel_press_out            : require('../../imgs/buttons/cancel_press_out.png'),
+  decide_press_in             : require('../../imgs/buttons/decide_press_in.png'),
+  decide_press_out            : require('../../imgs/buttons/decide_press_out.png'),
+  rotate_left_press_in        : require('../../imgs/buttons/rotate_left_press_in.png'),
+  rotate_left_press_out       : require('../../imgs/buttons/rotate_left_press_out.png'),
+  rotate_right_press_in       : require('../../imgs/buttons/rotate_right_press_in.png'),
+  rotate_right_press_out      : require('../../imgs/buttons/rotate_right_press_out.png'),
+  rotate_vertical_press_in    : require('../../imgs/buttons/rotate_vertical_press_in.png'),
+  rotate_vertical_press_out   : require('../../imgs/buttons/rotate_vertical_press_out.png'),
+  rotate_horizontal_press_in  : require('../../imgs/buttons/rotate_horizontal_press_in.png'),
+  rotate_horizontal_press_out : require('../../imgs/buttons/rotate_horizontal_press_out.png'),
+};
 
 const status_assets = {
   attack  : require('../../imgs/icons/status/attack.png'),
@@ -41,7 +49,7 @@ const status_assets = {
   recover : require('../../imgs/icons/status/recover.png'),
   gold    : require('../../imgs/icons/status/gold.png'),
   heart   : require('../../imgs/icons/status/heart.png')
-}
+};
 
 class Game extends Component {
   constructor(props) {
@@ -63,7 +71,8 @@ class Game extends Component {
 
       /*GameInofs*/
       battle : false,
-      floor : 1
+      floor : 1,
+      score : 0
     }
   }
 
@@ -80,16 +89,15 @@ class Game extends Component {
 		return (
       <View style={{flex:1}}>
         <View style={style.container}>
-          <Header
-            floor={this.state.floor}
-            battle={this.state.battle}
-          />
 
           <Board
             user={this.state.user}
             status={this.state.status}
             upFloor={this.upFloor}
             battle={this.state.battle}
+            floor={this.state.floor}
+            battle={this.state.battle}
+            score={this.state.score}
           />
 
           <Battle/>
@@ -112,8 +120,19 @@ class Header extends Component {
 		return (
       <View style={header.container}>
         <View style={header.wrap}>
-          <Text>층수 : {this.props.floor}</Text>
-          <Text>Battle : {this.props.battle.toString()}</Text>
+          <View style={header.phase}>
+            <Text style={header.label} >Phase</Text>
+            <Text style={header.value}>{this.props.floor}</Text>
+          </View>
+
+          <View style={header.score}>
+            <Text style={header.label}>Score</Text>
+            <Text style={header.value}>{this.props.score}</Text>
+          </View>
+
+          <View style={header.setting}>
+            <Text>설정</Text>
+          </View>
         </View>
       </View>
 		)
@@ -144,6 +163,7 @@ class Board extends Component {
 
     this.boardRef = React.createRef();
     this.contollerRef = React.createRef();
+    this.bg = require('../../imgs/backgrounds/board/origbig.png');
   }
 
   componentMeasure = async () => {
@@ -223,10 +243,13 @@ class Board extends Component {
       }
     }
 
+    //마지막에 개발 -> 능력치 반영, 완성된 요소 삭제 어떻게 할건지
+    this.contollerRef.current.createNewPiece();
+    this.props.upFloor();
     this.setState({
-      board    : origin_board,
-      consider : true,
-      consider_element_tr : [releasedRow, releasedCol]
+      board : origin_board,
+      //consider : true,
+      consider_element_tr : [releasedRow, releasedCol] //방금 놓은 블럭의 0행 0열 데이터 (무르기 개발 대비)
     }, () => {
       pan.setValue({ x: 0, y: 0});
     })
@@ -297,13 +320,21 @@ class Board extends Component {
   render() {
     return (
       <View style={board.container}>
-        <View
-          style = {board.main}
-          ref = {this.boardRef}
-          onLayout = {this.componentMeasure}
-        >
-          {this.getTiles()}
-        </View>
+        <ImageBackground source={this.bg} resizeMode="cover">
+          <Header
+            floor={this.props.floor}
+            battle={this.props.battle}
+            score={this.props.score}
+          />
+
+          <View
+            style = {board.main}
+            ref = {this.boardRef}
+            onLayout = {this.componentMeasure}
+          >
+            {this.getTiles()}
+          </View>
+        </ImageBackground>
 
         <Status
           user={this.props.user}
@@ -324,6 +355,7 @@ class Board extends Component {
 }
 
 const Tile = (props) => {
+  const bg = require('../../imgs/backgrounds/tile.png');
   const data = props.data;
   const row = props.row;
   const col = props.col;
@@ -331,15 +363,15 @@ const Tile = (props) => {
   if (data === null) {
     return (
       <View style={[{
-        borderWidth: 1,
         width:boardSizeDatas.elementWidth,
         height:boardSizeDatas.elementWidth,
-        opacity: '1'
-      }, piece.temp(data?.name)]}
+      }]}
       >
+        <ImageBackground source={bg} style={{ flex: 1}} resizeMode="contain">
         <Text>
-          {row+"-"+col}
+          {/*row+"-"+col*/}
         </Text>
+        </ImageBackground>
       </View>
     )
   } else {
@@ -347,16 +379,13 @@ const Tile = (props) => {
 
     return (
       <View style={{
-        borderWidth: 1,
         width:boardSizeDatas.elementWidth,
         height:boardSizeDatas.elementWidth,
-        opacity: (data.decided) ? '1' : '0.5'
       }}
       >
-        <ImageBackground source={source} style={{ flex: 1, justifyContent:'center'}}>
-          <Text style={piece.el.font}>
-            {data.code}
-          </Text>
+        <ImageBackground source={bg} style={{ flex: 1,  padding: 1}} resizeMode="contain">
+          <ImageBackground source={source} style={{ flex: 1}} resizeMode="contain">
+          </ImageBackground>
         </ImageBackground>
       </View>
     )
@@ -373,6 +402,12 @@ const PieceContoll = React.forwardRef((props, ref) => {
   const [nextPieceData, setNextPieceData]             = useState([[null,null],[null,null]]);
   const [afterNextPieceData, setAfterNextPieceData]   = useState([[null,null],[null,null]]);
   const [lastPieceData, setLastPieceData]             = useState([[null,null],[null,null]]);
+
+  /*Control Buttons Press State*/
+  const [rotateLeftPressIn      , setRotateLeftPressIn]       = useState(false);
+  const [rotateRightPressIn     , setRotateRightPressIn]      = useState(false);
+  const [rotateVerticalPressIn  , setRotateVerticalPressIn]   = useState(false);
+  const [rotateHorizontalPressIn, setRotateHorizontalPressIn] = useState(false);
 
   useEffect(() => {
     setPieceData(pieceApi.createNewPiece());
@@ -456,58 +491,62 @@ const PieceContoll = React.forwardRef((props, ref) => {
 
   return (
     <View style={piece.controller.whole}>
-        <View style={piece.controller.container}>
-          <NextPiece
-            ref={lastPieceRef}
-            pieceData={afterNextPieceData}
-            type="last"
-          />
+      <View style={piece.controller.container}>
+        <NextPiece
+          ref={lastPieceRef}
+          pieceData={afterNextPieceData}
+          type="last"
+        />
 
-          <NextPiece
-            ref={afterNextPieceRef}
-            pieceData={afterNextPieceData}
-            type="after"
-          />
+        <NextPiece
+          ref={afterNextPieceRef}
+          pieceData={afterNextPieceData}
+          type="after"
+        />
 
-          <NextPiece
-            ref={nextPieceRef}
-            pieceData={nextPieceData}
-            type="next"
-          />
+        <NextPiece
+          ref={nextPieceRef}
+          pieceData={nextPieceData}
+          type="next"
+        />
 
-          <Piece
-            ref={pieceRef}
-            releasePiece={props.releasePiece}
-            pieceData={pieceData}
-            boardConsider={props.boardConsider}
-          />
-        </View>
+        <Piece
+          ref={pieceRef}
+          releasePiece={props.releasePiece}
+          pieceData={pieceData}
+          boardConsider={props.boardConsider}
+        />
+
+        {/*보더를 감싸고 있는 프레임 디자인*/}
+        <ImageBackground source={element_assets.frame} style={piece.frame} resizeMode="contain">
+        </ImageBackground>
+      </View>
 
       <View style={{width:boardSizeDatas.elementWidth*3, flexDirection:'row', flexWrap:'wrap'}}>
         <View style={{height:'50%', width:'50%'}}>
-          <ImageBackground source={button_assets.left} style={{ flex: 1, justifyContent:'center'}}>
-            <TouchableOpacity onPress={pieceRotateLeft} style={{flex:1}}>
+          <ImageBackground source={(rotateLeftPressIn) ? button_assets.rotate_left_press_in : button_assets.rotate_left_press_out} style={{ flex: 1 }} resizeMode="contain">
+            <TouchableOpacity onPress={pieceRotateLeft} onPressIn={()=>{setRotateLeftPressIn(true)}} onPressOut={()=>{setRotateLeftPressIn(false)}} style={{flex:1}}>
             </TouchableOpacity>
           </ImageBackground>
         </View>
 
         <View style={{height:'50%', width:'50%'}}>
-          <ImageBackground source={button_assets.right} style={{ flex: 1, justifyContent:'center'}}>
-            <TouchableOpacity onPress={pieceRotateRight} style={{flex:1}}>
+          <ImageBackground source={(rotateRightPressIn) ? button_assets.rotate_right_press_in : button_assets.rotate_right_press_out} style={{ flex: 1 }} resizeMode="contain">
+            <TouchableOpacity onPress={pieceRotateRight} onPressIn={()=>{setRotateRightPressIn(true)}} onPressOut={()=>{setRotateRightPressIn(false)}} style={{flex:1}}>
             </TouchableOpacity>
           </ImageBackground>
         </View>
 
-        <View style={{height:'50%', width:'50%'}}>
-          <ImageBackground source={button_assets.vertical} style={{ flex: 1, justifyContent:'center'}}>
-            <TouchableOpacity onPress={pieceRotateVertical} style={{flex:1}}>
+        <View style={{height:'50%', width:'50%', right: 16}}>
+          <ImageBackground source={(rotateVerticalPressIn) ? button_assets.rotate_vertical_press_in : button_assets.rotate_vertical_press_out} style={{ flex: 1 }} resizeMode="contain">
+            <TouchableOpacity onPress={pieceRotateVertical} onPressIn={()=>{setRotateVerticalPressIn(true)}} onPressOut={()=>{setRotateVerticalPressIn(false)}} style={{flex:1}}>
             </TouchableOpacity>
           </ImageBackground>
         </View>
 
-        <View style={{height:'50%', width:'50%'}}>
-          <ImageBackground source={button_assets.horizontal} style={{ flex: 1, justifyContent:'center'}}>
-            <TouchableOpacity onPress={pieceRotateHorizontal} style={{flex:1}}>
+        <View style={{height:'50%', width:'50%', right: 16}}>
+          <ImageBackground source={(rotateHorizontalPressIn) ? button_assets.rotate_horizontal_press_in : button_assets.rotate_horizontal_press_out} style={{ flex: 1 }} resizeMode="contain">
+            <TouchableOpacity onPress={pieceRotateHorizontal} onPressIn={()=>{setRotateHorizontalPressIn(true)}} onPressOut={()=>{setRotateHorizontalPressIn(false)}} style={{flex:1}}>
             </TouchableOpacity>
           </ImageBackground>
         </View>
@@ -528,7 +567,7 @@ const NextPiece = React.forwardRef((props, ref) => {
   const moveRight = () => {
     return Animated.timing(animatedValue, {
         toValue: boardSizeDatas.elementWidth*2+5+24,
-        duration: 500,
+        duration: 250,
         useNativeDriver: true,
     });
   }
@@ -592,11 +631,13 @@ const Piece = React.forwardRef((props, ref) => {
   const opacityAnimatedStyle = { opacity : opacityAnimatedValue };
   const afterDecidedOpacityAnimation = () => {
     //결정 버튼을 눌렀을때, 다음 블럭이 오는 동안 서서히 opacity를 낮추어 사라지게 함
-    return Animated.timing(opacityAnimatedValue, {
+    opacityAnimatedValue.setValue(0);
+
+    /*return Animated.timing(opacityAnimatedValue, {
         toValue: 0,
         duration: 200,
         useNativeDriver: true,
-    });
+    });*/
   }
   const moveCompleteOpacityAnimation = () => {
     //이동이 완료되었을때, 다시 보이게 한다.
@@ -643,7 +684,7 @@ const Piece = React.forwardRef((props, ref) => {
     <Animated.View
       style={[{
         transform: [{translateX: pan.x}, {translateY: pan.y}],
-      }, (props.boardConsider) ? {opacity:'0.7'} : opacityAnimatedStyle]}
+      }, {zIndex:1},(props.boardConsider) ? {opacity:'0.7'} : opacityAnimatedStyle]}
       {...pieceResponder.panHandlers}
       ref={pieceRef}
      >
@@ -796,10 +837,7 @@ const Element = React.forwardRef((props, ref) => {
     const source = element_assets[data.name];
     return (
       <Animated.View style={[piece.el, animatedStyle]}>
-        <ImageBackground source={source} style={{ flex: 1, justifyContent:'center'}}>
-          <Text style={piece.el.font}>
-          {data.code}
-          </Text>
+        <ImageBackground source={source} style={{ flex: 1}} resizeMode="contain">
         </ImageBackground>
       </Animated.View>
     )
@@ -812,32 +850,72 @@ const Element = React.forwardRef((props, ref) => {
 });
 
 const Battle = (props) => {
+  /*Assets*/
   const bg_assets = {
     top : require('../../imgs/backgrounds/battle_top.png'),
     cloud : require('../../imgs/backgrounds/battle_sky.png'),
     sky : require('../../imgs/backgrounds/battle_cloud.png'),
     bottom  : require('../../imgs/backgrounds/battle_bottom.png'),
-  }
+  };
+  const ch_assets = {
+    moving_0 : require('../../imgs/character/moving_0.png'),
+    moving_1 : require('../../imgs/character/moving_1.png'),
+  };
+
+  /*State*/
+  const [userAnimationImage, setUserAnimationImage] = useState("0");
+
+  /*애니메이션*/
+  const userInitAnimationValue = useRef(new Animated.Value(-64)).current;
+  const userInitAnimationStyle = {  transform: [{translateX: userInitAnimationValue}] };
+  const userOpacityAnimatedValue   = useRef(new Animated.Value(0)).current;
+  const userOpacityAnimatedStyle   = { opacity : userOpacityAnimatedValue };
+
+  /*Timers*/
+  let ch_timer = null;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(userInitAnimationValue, { toValue: 64, duration: 1250, useNativeDriver: true }),
+      Animated.timing(userOpacityAnimatedValue, { toValue: 1, duration: 1250, useNativeDriver: true })
+    ]).start(()=>{
+      ch_timer = setInterval(() => {
+        const page = userAnimationImage;
+        setUserAnimationImage((prev) => {
+          return (prev==="0") ? "1" : "0"
+        })
+      }, 500);
+    });
+
+    return () => {
+      clearInterval(ch_timer);
+    };
+  }, []);
 
   return (
     <View style={battle.container}>
+      <Animated.View style={[{zIndex: 4, position: 'absolute', bottom: 24, width: 64, height: 64},userInitAnimationStyle, userOpacityAnimatedStyle]}>
+        <ImageBackground source={(userAnimationImage==="0") ? ch_assets.moving_0 : ch_assets.moving_1} style={{flex: 1}} resizeMode="contain">
+        </ImageBackground>
+      </Animated.View>
+
       <View style={{flex:1}}>
         <ImageBackground source={bg_assets.top} style={{
-          flex: 1, position:'absolute', width:'100%', height:6, top:0, zIndex:15
+          flex: 1, position:'absolute', width:'100%', height:6, top:0, zIndex:3
         }} resizeMode="repeat">
         </ImageBackground>
 
         <ImageBackground source={bg_assets.cloud} style={{
-          flex: 1, position:'absolute', width:'100%', height:'100%'
+          flex: 1, position:'absolute', width:'100%', height:'100%', zIndex: 1
         }}>
         </ImageBackground>
 
         <ImageBackground source={bg_assets.sky} style={{
-          flex: 1, position:'absolute', width:'100%', height:'100%'
+          flex: 1, position:'absolute', width:'100%', height:'100%', zIndex: 2
         }}>
         </ImageBackground>
 
-        <View style={{height: 32, position: 'absolute', width: '100%', bottom:0}}>
+        <View style={{height: 32, position: 'absolute', width: '100%', bottom:0, zIndex: 3}}>
           <ImageBackground source={bg_assets.bottom} style={{ flex: 1}}>
           </ImageBackground>
         </View>
@@ -868,20 +946,6 @@ const Status = (props) => {
         user={props.user}
         status={props.status}
       />
-
-      <View style={{flexDirection: 'row'}}>
-        <Health user={props.user}/>
-
-        <ConsiderButtons
-          pressInCancel     ={pressInCancel}
-          setPressInCancel  ={setPressInCancel}
-          pressInDecide     ={pressInDecide}
-          setPressInDecide  ={setPressInDecide}
-          boardConsider     ={props.boardConsider}
-          decidedPiece      ={decidedPiece}
-          cancelPiece       ={cancelPiece}
-        />
-      </View>
     </View>
   )
 }
@@ -909,13 +973,14 @@ const StatusBar = (props) => {
       justifyContent: 'center'
     },
     font : {
-      fontFamily: 'Ancient',
+      fontFamily: 'Dungeon',
       marginLeft: 6,
       marginRight: 4,
       fontWeight: 'bold',
       fontSize: 20,
       letterSpacing: 2,
-      paddingTop: 2
+      paddingTop: 2,
+      color: "#141414"
     }
   });
 
@@ -1012,30 +1077,24 @@ const ConsiderButtons = (props) => {
 const style = StyleSheet.create({
   container : {
     flex:1,
-    borderWidth: 1
   },
 });
 
 const piece = StyleSheet.create({
   piece : {
-    width: boardSizeDatas.elementWidth*2 +5,
-    height: boardSizeDatas.elementWidth*2 +5,
+    width: boardSizeDatas.elementWidth*2 +2,
+    height: boardSizeDatas.elementWidth*2 +2,
     flexDirection:'row',
     flexWrap: 'wrap',
-    borderRadius:5,
-    overflow:'hidden',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight:24,
   },
   next_piece : {
-    width: boardSizeDatas.elementWidth*2 +5,
-    height: boardSizeDatas.elementWidth*2 +5,
+    width: boardSizeDatas.elementWidth*2 +2,
+    height: boardSizeDatas.elementWidth*2 +2,
     flexDirection:'row',
     flexWrap: 'wrap',
-    marginRight:24,
-    borderRadius:5,
-    overflow:'hidden',
+    marginRight:27,
     justifyContent: 'center',
     alignItems: 'center',
     dynamicOpacity : (type) => {
@@ -1048,84 +1107,90 @@ const piece = StyleSheet.create({
   el : {
     width : boardSizeDatas.elementWidth,
     height: boardSizeDatas.elementWidth,
-
-    font : {
-      color:'white',
-      fontWeight: 'bold',
-      fontSize : 16,
-      fontFamily : 'Ancient',
-      textAlign:'center',
-      paddingRight:2
-    }
   },
-  temp : (name) => {
-    let backgroundColor;
-    if (name === 'attack') {
-      backgroundColor = 'red'
-    } else if (name === 'gold') {
-      backgroundColor = 'yellow'
-    } else if (name === 'defend') {
-      backgroundColor = 'blue'
-    } else if (name === 'recover') {
-      backgroundColor = 'green'
-    } else {
-      backgroundColor = 'white'
-    }
-
-    return {
-      backgroundColor : backgroundColor
-    }
+  frame : {
+    position: 'absolute',
+    width : boardSizeDatas.elementWidth*2 + 2 + 14,
+    height: boardSizeDatas.elementWidth*2 + 2 + 14,
+    right: 25, //controller.container.paddingRight - 위에 절반
   },
   controller : {
     whole : {
-      height:boardSizeDatas.elementWidth*3,
+      height:boardSizeDatas.elementWidth*3 + 8,
       width:'100%',
       flexDirection:'row',
-      paddingRight:8
+      paddingTop: 4,
+      paddingBottom: 4,
     },
     container : {
       flexDirection:'row',
       flex:1,
       alignItems:'center',
       justifyContent:'flex-end',
-      flexWrap: 'nowrap'
+      flexWrap: 'nowrap',
+      paddingRight: 32,
     }
   }
 })
 
 const header = StyleSheet.create({
   container: {
-    backgroundColor:'white',
     height:headerHeight,
   },
   wrap:{
-    borderWidth:1,
-    borderColor:'green',
     flex:1,
-    justifyContent:'flex-end',
-    alignItems:'center',
-    paddingBottom:16
+    justifyContent:'flex-start',
+    alignItems:'flex-end',
+    flexDirection: 'row',
+    paddingLeft: 24,
+    paddingRight: 24,
+    paddingBottom: 6
+  },
+  phase : {
+    flexDirection: 'row',
+    marginRight: 18,
+    alignItems: 'center'
+  },
+  score : {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  setting : {
+    marginLeft: 'auto'
+  },
+  label : {
+    fontSize: 28,
+    fontFamily: 'Dungeon',
+    color: '#141414'
+  },
+  value : {
+    fontSize: 28,
+    fontFamily: 'Dungeon',
+    marginLeft: 6,
+    width: 34,
+    color: '#141414'
   }
 })
 
 const board = StyleSheet.create({
-  container : {
-    borderWidth: 1,
-  },
+  container : {},
   main : {
     width: boardSizeDatas.boardWidth,
-    height: boardSizeDatas.boardHeight,
+    height: boardSizeDatas.boardHeight+14,
     flexDirection:'row',
     flexWrap:'wrap',
-    alignSelf : 'center'
+    alignSelf : 'center',
+    paddingBottom: 14
   }
 });
 
 const status = StyleSheet.create({
   container : {
     borderWidth: 1,
-    paddingLeft:8,
-    paddingRight:8,
+    paddingLeft:16,
+    paddingRight:16,
+    paddingTop: 4,
+    paddingBottom: 4
   },
   status : {
     borderWidth: 1,
