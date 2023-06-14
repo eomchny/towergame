@@ -182,10 +182,20 @@ class Board extends Component {
       return;
     }
 
-    /*피스의 엘리먼트중에 보드 안에 들어가지 않는게 있음*/
-    if (releasedRow >= boardSize - 1 || releasedCol >= boardSize - 1) {
-      pan.setValue({ x: 0, y: 0 });
-      return;
+    /*0행 0열 (릴리즈포인트)가 마지막 열에 있는 경우*/
+    if (releasedCol >= boardSize - 1) {
+      if (!(piece[0][1] == null && piece[1][1] == null)) {
+        pan.setValue({ x: 0, y: 0 });
+        return;
+      }
+    }
+
+    /*0행 0열 (릴리즈포인트)가 마지막 행에 있는 경우*/
+    if (releasedRow >= boardSize - 1) {
+      if (!(piece[1][0] == null && piece[1][1] == null)) {
+        pan.setValue({ x: 0, y: 0 });
+        return;
+      }
     }
 
     /*겹치는 부분이 둘다 null이어야 넣을 수 있음*/
@@ -218,6 +228,7 @@ class Board extends Component {
     }
 
     //마지막에 개발 -> 능력치 반영, 완성된 요소 삭제 어떻게 할건지
+    this.elementCompleteCheck(origin_board, releasedRow, releasedCol);
     this.contollerRef.current.createNewPiece();
     this.props.upFloor();
     this.setState(
@@ -279,22 +290,30 @@ class Board extends Component {
     });
   };
 
-  afterDecided = (based_row, based_col) => {
-    /*
-    블럭을 놓는다
-    => 완성된 요소가 있는지 확인한다
-    => 완성된 요소를 확인하고 능력치에 반영한다
-    => 완성된 요소를 삭제한다
-    =>배틀
-    =>이기면 층을 올린다
-    */
+  elementCompleteCheck = (board, row, col) => {
+    if (row === boardSize - 1) {
+      return;
+    }
 
-    this.props.upFloor();
-    this.contollerRef.current.createNewPiece();
+    if (col === boardSize - 1) {
+      return;
+    }
+
+    for (let r = 0; r <= 1; r++) {
+      for (let c = 0; c <= 1; c++) {
+        const el = board[row + r][col + c];
+
+        if (el !== null) {
+          if (el.name === "gold") {
+            console.log("골드찾기");
+          }
+        }
+      }
+    }
   };
 
-  elementCompleteCheck = () => {
-    //완성된 요소가 있는지 확인
+  discoverGold = (board, based_row, based_col) => {
+    const base = board[based_row][based_col];
   };
 
   render() {
@@ -580,7 +599,7 @@ const Piece = React.forwardRef((props, ref) => {
     onStartShouldSetPanResponder: (e, gestureState) => true,
     onMoveShouldSetPanResponder: (e, gestureState) => true,
     onPanResponderGrant: (e, gestureState) => {
-      /*초기 위치*/
+      /*초기위치*/
       const { pageX, pageY } = e.nativeEvent;
     },
     onPanResponderMove: (e, gestureState) => {
@@ -599,17 +618,9 @@ const Piece = React.forwardRef((props, ref) => {
   const opacityAnimatedValue = useRef(new Animated.Value(1)).current;
   const opacityAnimatedStyle = { opacity: opacityAnimatedValue };
   const afterDecidedOpacityAnimation = () => {
-    //결정 버튼을 눌렀을때, 다음 블럭이 오는 동안 서서히 opacity를 낮추어 사라지게 함
     opacityAnimatedValue.setValue(0);
-
-    /*return Animated.timing(opacityAnimatedValue, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-    });*/
   };
   const moveCompleteOpacityAnimation = () => {
-    //이동이 완료되었을때, 다시 보이게 한다.
     opacityAnimatedValue.setValue(1);
   };
 
@@ -634,10 +645,10 @@ const Piece = React.forwardRef((props, ref) => {
   };
 
   const rotateReset = () => {
-    const r0_c0 = r0_c0_ref.current.rotateReset();
-    const r0_c1 = r0_c1_ref.current.rotateReset();
-    const r1_c0 = r1_c0_ref.current.rotateReset();
-    const r1_c1 = r1_c1_ref.current.rotateReset();
+    r0_c0_ref.current.rotateReset();
+    r0_c1_ref.current.rotateReset();
+    r1_c0_ref.current.rotateReset();
+    r1_c1_ref.current.rotateReset();
   };
 
   /*부모요소가 사용할 함수들*/
@@ -655,7 +666,7 @@ const Piece = React.forwardRef((props, ref) => {
           transform: [{ translateX: pan.x }, { translateY: pan.y }],
         },
         { zIndex: 1 },
-        props.boardConsider ? { opacity: "0.7" } : opacityAnimatedStyle,
+        opacityAnimatedStyle,
       ]}
       {...pieceResponder.panHandlers}
       ref={pieceRef}

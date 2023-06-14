@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { StyleSheet, Text, View, ImageBackground } from "react-native";
 
 const status_assets = {
@@ -17,8 +17,17 @@ const StatusBar = (props) => {
   const gold = props.status.gold;
   const user = props.user;
 
+  const [maskLength, setMaskLength] = useState(0);
+  const goldRef = useRef(null);
+  const goldMeasure = async () => {
+    goldRef.current.measure((fx, fy, width, height, px, py) => {
+      setMaskLength(px + width + 16);
+    });
+  };
+
   return (
     <View style={style.container}>
+      <View style={[style.mask, { width: maskLength }]}></View>
       <View style={style.wrap}>
         <View style={style.icon}>
           <ImageBackground
@@ -73,7 +82,7 @@ const StatusBar = (props) => {
         </View>
       </View>
 
-      <View style={style.wrap}>
+      <View style={style.wrap} onLayout={goldMeasure} ref={goldRef}>
         <View style={style.icon}>
           <ImageBackground
             source={status_assets.gold}
@@ -92,8 +101,10 @@ const StatusBar = (props) => {
 const style = StyleSheet.create({
   container: {
     flexDirection: "row",
-    paddingLeft: 24,
-    marginTop: 12,
+    paddingLeft: 18,
+    marginTop: 6,
+    paddingTop: 6,
+    paddingBottom: 4,
   },
   wrap: {
     flexDirection: "row",
@@ -113,7 +124,18 @@ const style = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 22,
     letterSpacing: 2,
-    color: "#141414",
+    color: "#f5f5dc",
+  },
+  mask: {
+    borderWidth: 1,
+    position: "absolute",
+    left: 0,
+    top: 0,
+    height: 24 + 12,
+    borderTopRightRadius: "100%",
+    borderBottomRightRadius: "100%",
+    backgroundColor: "black",
+    opacity: 0.7,
   },
 });
 
