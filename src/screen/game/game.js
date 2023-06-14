@@ -131,6 +131,9 @@ class Board extends Component {
     this.bg = require("../../imgs/backgrounds/board/origbig.png");
   }
 
+  componentDidMount = () => {
+  }
+
   componentMeasure = async () => {
     this.boardRef.current.measure((fx, fy, width, height, px, py) => {
       this.setState({
@@ -163,7 +166,7 @@ class Board extends Component {
     const releasePointPx = px + boardSizeDatas.elementWidth / 2;
     const releasePointPy = py + boardSizeDatas.elementWidth / 2;
 
-    const origin_board = this.state.board;
+    let origin_board = this.state.board;
     const releasedRow =
       parseInt(
         (releasePointPy - this.state.boardY) / boardSizeDatas.elementWidth
@@ -228,7 +231,7 @@ class Board extends Component {
     }
 
     //마지막에 개발 -> 능력치 반영, 완성된 요소 삭제 어떻게 할건지
-    this.elementCompleteCheck(origin_board, releasedRow, releasedCol);
+    origin_board = this.elementCompleteCheck(origin_board, releasedRow, releasedCol);
     this.contollerRef.current.createNewPiece();
     this.props.upFloor();
     this.setState(
@@ -291,29 +294,60 @@ class Board extends Component {
   };
 
   elementCompleteCheck = (board, row, col) => {
-    if (row === boardSize - 1) {
-      return;
-    }
+    if (row === boardSize - 1) { return }
 
-    if (col === boardSize - 1) {
-      return;
-    }
+    if (col === boardSize - 1) { return }
 
     for (let r = 0; r <= 1; r++) {
       for (let c = 0; c <= 1; c++) {
         const el = board[row + r][col + c];
 
         if (el !== null) {
-          if (el.name === "gold") {
-            console.log("골드찾기");
+          const name = el.name;
+          if (name==="gold") {
+            board = this.discoverGold(board, row+r, col+c);
           }
         }
       }
     }
+
+    return board;
   };
 
-  discoverGold = (board, based_row, based_col) => {
-    const base = board[based_row][based_col];
+  discoverGold = (board, row, col) => {
+    /*Col Check*/
+    let cols = [];
+    cols.push(board[row][col]);
+    let i = 1;
+    while (true) {
+      const left = board[row][col-i];
+
+      if (left && left.name === "gold") {
+        cols.push(board[row][col-i])
+      } else {
+        break;
+      }
+
+      i++;
+    }
+
+    i=1;
+    while (true) {
+      const right = board[row][col+i];
+
+      if (right && right.name === "gold") {
+        cols.push(board[row][col+i])
+      } else {
+        break;
+      }
+
+      i++;
+    }
+
+    if (cols.length >= 3) {
+    }
+
+    return board;
   };
 
   render() {
@@ -325,7 +359,7 @@ class Board extends Component {
             ref={this.boardRef}
             onLayout={this.componentMeasure}
           >
-            {this.getTiles()}
+          {this.getTiles()}
           </View>
         </ImageBackground>
 
@@ -362,12 +396,14 @@ const Tile = (props) => {
     );
   } else {
     const source = element_assets[data.name];
+    const remove = data.willRemove;
 
     return (
       <View
         style={{
           width: boardSizeDatas.elementWidth,
           height: boardSizeDatas.elementWidth,
+          borderWidth: (remove) ? 4 : 0
         }}
       >
         <ImageBackground
