@@ -66,7 +66,6 @@ const header = StyleSheet.create({
     fontSize: 28,
     fontFamily: "Dungeon",
     marginLeft: 6,
-    width: 34,
     color: "#141414",
   },
 });

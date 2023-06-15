@@ -2,8 +2,32 @@ const pieceApi = {
   createNewPiece: function () {
     const min = 2;
     const max = 4;
-    const count = Math.floor(Math.random() * (max - min + 1)) + min;
+    const count = Math.floor(Math.random() * (max - min + 1)) + min; //2~4개
     let arr = [null, null, null, null];
+    let testarr = [{ ...elements[0] },{ ...elements[1] },{ ...elements[3] },null];
+
+    /**/
+    const minus = Math.round(Math.random()); //0개 또는 1개를 뽑아낼것이다.
+    if (minus === 1) {
+      /*뽑아낼게 있는 경우*/
+      const target = Math.floor(Math.random() * 3); //0 또는 1 또는 2
+      testarr[target] = null;
+    }
+
+    const gold = Math.round(Math.random()); //0이면 골드를 넣고, 1이면 넣지 않는다.
+    if (gold === 1) {
+      testarr[3] = { ...elements[2] }
+    }
+
+    testarr = shuffleArray(testarr);
+
+    const test_matrix = [
+      [testarr[0], testarr[1]],
+      [testarr[2], testarr[3]],
+    ];
+
+    return test_matrix;
+
 
     //1. Input Element
     for (let index = 0; index < count; index++) {

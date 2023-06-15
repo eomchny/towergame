@@ -85,6 +85,14 @@ class Game extends Component {
     });
   };
 
+  upScore = (value) => {
+    const sc = this.state.score + value;
+
+    this.setState({
+      score: sc
+    });
+  };
+
   goldUpdate = (value) => {
     const origin = this.state.status.gold;
 
@@ -200,6 +208,7 @@ class Game extends Component {
           <Board
             user={this.state.user}
             upFloor={this.upFloor}
+            upScore={this.upScore}
             battle={this.state.battle}
             floor={this.state.floor}
             score={this.state.score}
@@ -457,12 +466,14 @@ class Board extends Component {
           const name = el.name;
 
           if (name === "gold") {
-            board = boardApi.checkGold(board, row + r, col + c, (value) => {
+            board = boardApi.checkGold(board, row + r, col + c, (value, score) => {
               this.props.goldUpdate(value);
+              this.props.upScore(score);
             });
           } else if (name === "attack") {
-            board = boardApi.checkAttack(board, row + r, col + c, (value) => {
+            board = boardApi.checkAttack(board, row + r, col + c, (value, score) => {
               this.props.attackUpdate(value);
+              this.props.upScore(score);
             });
           } else if (name === "defend") {
             board = boardApi.checkDefend(board, row + r, col + c, (value) => {

@@ -20,10 +20,8 @@ const StatusBar = (props) => {
   const user = props.user;
   const attack = props.status.attack;
   const defend = props.status.defend;
-  let ms = false;
-
-  /*Recover*/
   const recover = props.status.recover;
+  let ms = false;
 
   /*Gold*/
   const gold = props.status.gold;
@@ -48,12 +46,10 @@ const StatusBar = (props) => {
 
   /*골드가 바뀌었을때, 이전 골드와 얼마나 차이나는지 확인 후 애니메이션*/
   useEffect(() => {
-    if (props.status.gold !== prevGold) {
-      if (props.status.gold > prevGold) {
-        goldUpDownAnimation("up");
-      } else if (props.status.gold < prevGold) {
-        goldUpDownAnimation("down");
-      }
+    if (props.status.gold >= prevGold) {
+      goldUpDownAnimation("up");
+    } else if (props.status.gold < prevGold) {
+      goldUpDownAnimation("down");
     }
 
     setPrevGold(props.status.gold);
@@ -90,6 +86,55 @@ const StatusBar = (props) => {
     });
   };
 
+  /*공격, 방어, 회복량이 바뀌었을때, 한번 올렸다 내림*/
+  const attackUpDownAnimationValue = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(attackUpDownAnimationValue, {
+        toValue: -12,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(attackUpDownAnimationValue, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [props.status.attack]);
+
+  const defendUpDownAnimationValue = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(defendUpDownAnimationValue, {
+        toValue: -12,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(defendUpDownAnimationValue, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [props.status.defend]);
+
+  const recoverUpDownAnimationValue = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(recoverUpDownAnimationValue, {
+        toValue: -12,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(recoverUpDownAnimationValue, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [props.status.recover]);
+
   return (
     <View style={style.container}>
       <View style={[style.mask, { width: maskLength }]}></View>
@@ -116,9 +161,12 @@ const StatusBar = (props) => {
           ></ImageBackground>
         </View>
 
-        <View style={style.textarea}>
+        <Animated.View style={[
+          style.textarea,
+          { transform: [{ translateY: attackUpDownAnimationValue }] },
+        ]}>
           <Text style={style.font}>{attack}</Text>
-        </View>
+        </Animated.View>
       </View>
 
       <View style={style.wrap}>
@@ -129,9 +177,12 @@ const StatusBar = (props) => {
           ></ImageBackground>
         </View>
 
-        <View style={style.textarea}>
+        <Animated.View style={[
+          style.textarea,
+          { transform: [{ translateY: defendUpDownAnimationValue }] },
+        ]}>
           <Text style={style.font}>{defend}</Text>
-        </View>
+        </Animated.View>
       </View>
 
       <View style={style.wrap}>
@@ -142,9 +193,12 @@ const StatusBar = (props) => {
           ></ImageBackground>
         </View>
 
-        <View style={style.textarea}>
+        <Animated.View style={[
+          style.textarea,
+          { transform: [{ translateY: recoverUpDownAnimationValue }] },
+        ]}>
           <Text style={style.font}>{recover}</Text>
-        </View>
+        </Animated.View>
       </View>
 
       <View style={style.wrap} onLayout={goldMeasure} ref={goldRef}>
