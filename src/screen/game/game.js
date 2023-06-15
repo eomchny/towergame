@@ -16,10 +16,12 @@ import {
 } from "react-native";
 import { PanResponder } from "react-native";
 import pieceApi from "../../apis/pieceApi";
+import boardApi from "../../apis/boardApi";
 import Header from "./header";
 import StatusBar from "./status";
 import Battle from "./battle";
 import Controller from "./controller";
+import Option from "./option";
 
 const boardSize = 10;
 const screenWidth = Dimensions.get("window").width;
@@ -62,6 +64,15 @@ class Game extends Component {
       battle: false,
       floor: 1,
       score: 0,
+
+      /*Status Object Position*/
+      statusPotions: null,
+
+      /*Showing Options*/
+      option: false,
+
+      /*Gamestart*/
+      ts: new Date().getTime(),
     };
   }
 
@@ -74,17 +85,113 @@ class Game extends Component {
     });
   };
 
+  goldUpdate = (value) => {
+    const origin = this.state.status.gold;
+
+    this.setState((prev) => ({
+      status: {
+        ...prev.status,
+        gold: origin + value,
+      },
+    }));
+  };
+
+  attackUpdate = (value) => {
+    const origin = this.state.status.attack;
+
+    this.setState((prev) => ({
+      status: {
+        ...prev.status,
+        attack: origin + value,
+      },
+    }));
+  };
+
+  defendUpdate = (value) => {
+    const origin = this.state.status.defend;
+
+    this.setState((prev) => ({
+      status: {
+        ...prev.status,
+        defend: origin + value,
+      },
+    }));
+  };
+
+  recoverUpdate = (value) => {
+    const origin = this.state.status.recover;
+
+    this.setState((prev) => ({
+      status: {
+        ...prev.status,
+        recover: origin + value,
+      },
+    }));
+  };
+
+  statusObjectPositions = (value) => {
+    this.setState({
+      statusPotions: value,
+    });
+  };
+
+  optionToggle = () => {
+    this.setState({
+      option: !this.state.option,
+    });
+  };
+
+  gameReset = () => {
+    this.setState({
+      user: {
+        max_hp: 10,
+        now_hp: 10,
+      },
+      status: {
+        attack: 1,
+        defend: 1,
+        recover: 1,
+        gold: 0,
+      },
+
+      /*GameInofs*/
+      battle: false,
+      floor: 1,
+      score: 0,
+
+      /*Showing Options*/
+      option: false,
+
+      /*Gamestart*/
+      ts: new Date().getTime(),
+    });
+  };
+
   render() {
     return (
       <View style={{ flex: 1 }}>
+        {this.state.option ? (
+          <Option optionToggle={this.optionToggle} gameReset={this.gameReset} />
+        ) : (
+          <></>
+        )}
+
         <View style={style.container}>
           <ImageBackground
             source={require("../../imgs/backgrounds/battle_sky.png")}
           >
             <View>
               <SafeAreaView>
-                <Header floor={this.state.floor} score={this.state.score} />
-                <StatusBar status={this.state.status} user={this.state.user} />
+                <Header
+                  floor={this.state.floor}
+                  score={this.state.score}
+                  optionToggle={this.optionToggle}
+                />
+                <StatusBar
+                  status={this.state.status}
+                  user={this.state.user}
+                  statusObjectPositions={this.statusObjectPositions}
+                />
                 <Battle />
               </SafeAreaView>
             </View>
@@ -92,11 +199,17 @@ class Game extends Component {
 
           <Board
             user={this.state.user}
-            status={this.state.status}
             upFloor={this.upFloor}
             battle={this.state.battle}
             floor={this.state.floor}
             score={this.state.score}
+            /*스탯 업데이트 Props*/
+            statusPotions={this.state.statusPotions}
+            attackUpdate={this.attackUpdate}
+            defendUpdate={this.defendUpdate}
+            recoverUpdate={this.recoverUpdate}
+            goldUpdate={this.goldUpdate}
+            ts={this.state.ts}
           />
         </View>
       </View>
@@ -131,7 +244,27 @@ class Board extends Component {
     this.bg = require("../../imgs/backgrounds/board/origbig.png");
   }
 
-  componentDidMount = () => {
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (prevProps.ts !== this.props.ts) {
+      const resetBoard = [
+        [null, null, null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null, null, null],
+      ];
+
+      this.contollerRef.current.resetPiece();
+
+      this.setState({
+        board: resetBoard,
+      });
+    }
   }
 
   componentMeasure = async () => {
@@ -155,7 +288,13 @@ class Board extends Component {
       for (let c = 0; c < row.length; c++) {
         const col = origin[r][c];
 
-        result.push(<Tile data={col} key={r + "_" + c} row={r} col={c} />);
+        result.push(
+          <Tile
+            data={col}
+            key={r + "_" + c}
+            statusPotions={this.props.statusPotions}
+          />
+        );
       }
     }
 
@@ -217,22 +356,30 @@ class Board extends Component {
 
     for (let rs = 0; rs <= 1; rs++) {
       for (let cs = 0; cs <= 1; cs++) {
-        const origin_board_item =
-          origin_board[releasedRow + rs][releasedCol + cs];
+        const row = releasedRow + rs;
+        const col = releasedCol + cs;
+        const origin_board_item = origin_board[row][col];
 
         if (origin_board_item === null) {
-          origin_board[releasedRow + rs][releasedCol + cs] = piece[rs][cs];
+          origin_board[row][col] = piece[rs][cs];
 
-          if (origin_board[releasedRow + rs][releasedCol + cs] !== null) {
-            origin_board[releasedRow + rs][releasedCol + cs].consider = true;
+          if (origin_board[row][col] !== null) {
+            origin_board[row][col].consider = true;
+            origin_board[row][col].row = row;
+            origin_board[row][col].col = col;
           }
         }
       }
     }
 
-    //마지막에 개발 -> 능력치 반영, 완성된 요소 삭제 어떻게 할건지
-    origin_board = this.elementCompleteCheck(origin_board, releasedRow, releasedCol);
+    /*새로운 피스를 생성하고 메인타겟으로 옮긴다.*/
     this.contollerRef.current.createNewPiece();
+
+    origin_board = this.elementCompleteCheck(
+      origin_board,
+      releasedRow,
+      releasedCol
+    );
     this.props.upFloor();
     this.setState(
       {
@@ -294,9 +441,13 @@ class Board extends Component {
   };
 
   elementCompleteCheck = (board, row, col) => {
-    if (row === boardSize - 1) { return }
+    if (row === boardSize - 1) {
+      return board;
+    }
 
-    if (col === boardSize - 1) { return }
+    if (col === boardSize - 1) {
+      return board;
+    }
 
     for (let r = 0; r <= 1; r++) {
       for (let c = 0; c <= 1; c++) {
@@ -304,47 +455,26 @@ class Board extends Component {
 
         if (el !== null) {
           const name = el.name;
-          if (name==="gold") {
-            board = this.discoverGold(board, row+r, col+c);
+
+          if (name === "gold") {
+            board = boardApi.checkGold(board, row + r, col + c, (value) => {
+              this.props.goldUpdate(value);
+            });
+          } else if (name === "attack") {
+            board = boardApi.checkAttack(board, row + r, col + c, (value) => {
+              this.props.attackUpdate(value);
+            });
+          } else if (name === "defend") {
+            board = boardApi.checkDefend(board, row + r, col + c, (value) => {
+              this.props.defendUpdate(value);
+            });
+          } else if (name === "recover") {
+            board = boardApi.checkRecover(board, row + r, col + c, (value) => {
+              this.props.recoverUpdate(value);
+            });
           }
         }
       }
-    }
-
-    return board;
-  };
-
-  discoverGold = (board, row, col) => {
-    /*Col Check*/
-    let cols = [];
-    cols.push(board[row][col]);
-    let i = 1;
-    while (true) {
-      const left = board[row][col-i];
-
-      if (left && left.name === "gold") {
-        cols.push(board[row][col-i])
-      } else {
-        break;
-      }
-
-      i++;
-    }
-
-    i=1;
-    while (true) {
-      const right = board[row][col+i];
-
-      if (right && right.name === "gold") {
-        cols.push(board[row][col+i])
-      } else {
-        break;
-      }
-
-      i++;
-    }
-
-    if (cols.length >= 3) {
     }
 
     return board;
@@ -359,7 +489,7 @@ class Board extends Component {
             ref={this.boardRef}
             onLayout={this.componentMeasure}
           >
-          {this.getTiles()}
+            {this.getTiles()}
           </View>
         </ImageBackground>
 
@@ -376,12 +506,59 @@ class Board extends Component {
 const Tile = (props) => {
   const bg = require("../../imgs/backgrounds/tile.png");
   const data = props.data;
-  const row = props.row;
-  const col = props.col;
+  const [prevData, setPrevData] = useState(props.data);
+  const [effect, setEffect] = useState("");
+  const EffectRef = useRef(null);
+
+  useEffect(() => {
+    if (props.data === null && prevData === null) {
+      setEffect("");
+    } else if (props.data !== null && prevData === null) {
+      setEffect("insert");
+    } else if (props.data === null && prevData !== null) {
+      setEffect(prevData.name);
+    }
+
+    setPrevData(props.data);
+  }, [props.data]);
+
+  /*삭제 애니메이션*/
+  const opacity = useRef(new Animated.Value(1)).current;
+  const animatedX = useRef(new Animated.Value(0)).current;
+  const animatedY = useRef(new Animated.Value(0)).current;
+
+  const removeEffect = (item) => {
+    EffectRef.current.measure((fx, fy, width, height, px, py) => {
+      console.log(px, py);
+
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedY, {
+          toValue: props.statusPotions[item].py - py,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedX, {
+          toValue: props.statusPotions[item].px - px,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        animatedY.setValue(0);
+        animatedX.setValue(0);
+        setEffect("");
+      });
+    });
+  };
 
   if (data === null) {
     return (
       <View
+        ref={EffectRef}
         style={[
           {
             width: boardSizeDatas.elementWidth,
@@ -390,7 +567,34 @@ const Tile = (props) => {
         ]}
       >
         <ImageBackground source={bg} style={{ flex: 1 }} resizeMode="contain">
-          <Text>{/*row+"-"+col*/}</Text>
+          {effect !== "insert" && effect !== "" ? (
+            <Animated.View
+              style={[
+                {
+                  flex: 1,
+                  position: "absolute",
+                  width: "100%",
+                  height: "100%",
+                  opacity: opacity,
+                },
+                {
+                  transform: [
+                    { translateX: animatedX },
+                    { translateY: animatedY },
+                  ],
+                },
+              ]}
+              onLayout={removeEffect(effect)}
+            >
+              <ImageBackground
+                source={element_assets[effect]}
+                style={{ flex: 1 }}
+                resizeMode="contain"
+              ></ImageBackground>
+            </Animated.View>
+          ) : (
+            <></>
+          )}
         </ImageBackground>
       </View>
     );
@@ -403,7 +607,7 @@ const Tile = (props) => {
         style={{
           width: boardSizeDatas.elementWidth,
           height: boardSizeDatas.elementWidth,
-          borderWidth: (remove) ? 4 : 0
+          borderWidth: remove ? 4 : 0,
         }}
       >
         <ImageBackground
@@ -460,6 +664,7 @@ const PieceContoll = React.forwardRef((props, ref) => {
 
   React.useImperativeHandle(ref, () => ({
     createNewPiece,
+    resetPiece,
   }));
 
   const pieceRotateLeft = () => {
@@ -525,6 +730,13 @@ const PieceContoll = React.forwardRef((props, ref) => {
         pieceRef.current.moveCompleteOpacityAnimation(),
       ]).start();
     });
+  };
+
+  const resetPiece = () => {
+    setPieceData(pieceApi.createNewPiece());
+    setNextPieceData(pieceApi.createNewPiece());
+    setAfterNextPieceData(pieceApi.createNewPiece());
+    setLastPieceData(pieceApi.createNewPiece());
   };
 
   const el_size = boardSizeDatas.elementWidth;

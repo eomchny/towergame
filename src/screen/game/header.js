@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 
 class Header extends Component {
   constructor(props) {
@@ -24,7 +24,9 @@ class Header extends Component {
           </View>
 
           <View style={header.setting}>
-            <Text style={header.label}>Option</Text>
+            <TouchableOpacity onPress={this.props.optionToggle}>
+              <Text style={header.label}>Option</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>

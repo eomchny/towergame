@@ -1,5 +1,11 @@
-import React, { useRef, useState } from "react";
-import { StyleSheet, Text, View, ImageBackground } from "react-native";
+import React, { useState, useRef, useEffect } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  ImageBackground,
+  Animated,
+} from "react-native";
 
 const status_assets = {
   back: require("../../imgs/backgrounds/controller_bg.png"),
@@ -11,17 +17,76 @@ const status_assets = {
 };
 
 const StatusBar = (props) => {
+  const user = props.user;
   const attack = props.status.attack;
   const defend = props.status.defend;
-  const recover = props.status.recover;
-  const gold = props.status.gold;
-  const user = props.user;
+  let ms = false;
 
+  /*Recover*/
+  const recover = props.status.recover;
+
+  /*Gold*/
+  const gold = props.status.gold;
+  const [prevGold, setPrevGold] = useState(props.status.gold);
+
+  /*골드 변화 애니메이션*/
+  const goldUpDownAnimationValue = useRef(new Animated.Value(0)).current;
+  const goldUpDownAnimation = (type) => {
+    Animated.sequence([
+      Animated.timing(goldUpDownAnimationValue, {
+        toValue: type === "up" ? -8 : 8,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(goldUpDownAnimationValue, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  /*골드가 바뀌었을때, 이전 골드와 얼마나 차이나는지 확인 후 애니메이션*/
+  useEffect(() => {
+    if (props.status.gold !== prevGold) {
+      if (props.status.gold > prevGold) {
+        goldUpDownAnimation("up");
+      } else if (props.status.gold < prevGold) {
+        goldUpDownAnimation("down");
+      }
+    }
+
+    setPrevGold(props.status.gold);
+  }, [props.status.gold]);
+
+  /*스테이터스 바를 감싸는 검은색 마스크의 길이를 지정*/
   const [maskLength, setMaskLength] = useState(0);
   const goldRef = useRef(null);
   const goldMeasure = async () => {
     goldRef.current.measure((fx, fy, width, height, px, py) => {
       setMaskLength(px + width + 16);
+
+      if (!ms) {
+        props.statusObjectPositions({
+          attack: {
+            px: px - 120,
+            py: py + 24,
+          },
+          defend: {
+            px: px - 80,
+            py: py + 24,
+          },
+          recover: {
+            px: px - 40,
+            py: py + 24,
+          },
+          gold: {
+            px: px,
+            py: py + 24,
+          },
+        });
+        ms = true;
+      }
     });
   };
 
@@ -90,9 +155,14 @@ const StatusBar = (props) => {
           ></ImageBackground>
         </View>
 
-        <View style={style.textarea}>
+        <Animated.View
+          style={[
+            style.textarea,
+            { transform: [{ translateY: goldUpDownAnimationValue }] },
+          ]}
+        >
           <Text style={style.font}>{gold}</Text>
-        </View>
+        </Animated.View>
       </View>
     </View>
   );
