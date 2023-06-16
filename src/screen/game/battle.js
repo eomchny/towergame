@@ -1,5 +1,12 @@
 import React, { useRef, useState, useEffect } from "react";
-import { StyleSheet, Animated, View, ImageBackground } from "react-native";
+import {
+  StyleSheet,
+  Animated,
+  View,
+  ImageBackground,
+  Text,
+  Dimensions,
+} from "react-native";
 
 /*Assets*/
 const bg_assets = {
@@ -18,9 +25,10 @@ const bottom_frame_height = 6;
 const character_height = 56;
 const grass_height = 32;
 
-const Battle = (props) => {
+const Battle = React.forwardRef((props, ref) => {
   /*State*/
   const [userAnimationImage, setUserAnimationImage] = useState("0");
+  const [animationSpeed, setAnimationSpeed] = useState(1250);
 
   /*애니메이션*/
   const userInitAnimationValue = useRef(new Animated.Value(-56)).current;
@@ -30,6 +38,14 @@ const Battle = (props) => {
   const userOpacityAnimatedValue = useRef(new Animated.Value(0)).current;
   const userOpacityAnimatedStyle = { opacity: userOpacityAnimatedValue };
 
+  /*몬스터 애니메이션*/
+  const monsterInitAnimationValue = useRef(new Animated.Value(70)).current;
+  const monsterInitAnimationStyle = {
+    transform: [{ translateX: monsterInitAnimationValue }],
+  };
+  const monsterOpacityAnimatedValue = useRef(new Animated.Value(1)).current;
+  const monsterOpacityAnimatedStyle = { opacity: monsterOpacityAnimatedValue };
+
   /*Timers*/
   let ch_timer = null;
 
@@ -37,17 +53,16 @@ const Battle = (props) => {
     Animated.parallel([
       Animated.timing(userInitAnimationValue, {
         toValue: 56,
-        duration: 1250,
+        duration: animationSpeed,
         useNativeDriver: true,
       }),
       Animated.timing(userOpacityAnimatedValue, {
         toValue: 1,
-        duration: 1250,
+        duration: animationSpeed,
         useNativeDriver: true,
       }),
     ]).start(() => {
       ch_timer = setInterval(() => {
-        const page = userAnimationImage;
         setUserAnimationImage((prev) => {
           return prev === "0" ? "1" : "0";
         });
@@ -63,6 +78,44 @@ const Battle = (props) => {
     return userAnimationImage === "0" ? ch_assets.moving_0 : ch_assets.moving_1;
   };
 
+  const createAndDisplayMonster = (monster) => {
+    /*몬스터로 스탯 보여주기 상태 변경 후 애니메이션 실행*/
+    return Animated.parallel([
+      Animated.timing(monsterInitAnimationValue, {
+        toValue: -70,
+        duration: animationSpeed,
+        useNativeDriver: true,
+      }),
+      Animated.timing(monsterOpacityAnimatedValue, {
+        toValue: 1,
+        duration: animationSpeed,
+        useNativeDriver: true,
+      }),
+    ]);
+  };
+
+  const userRunToMonster = () => {
+    return Animated.timing(userInitAnimationValue, {
+      toValue: Dimensions.get("screen").width - 56 - 70 - 56,
+      duration: animationSpeed * 0.7,
+      useNativeDriver: true,
+    });
+  };
+
+  const userBackFromMonster = () => {
+    return Animated.timing(userInitAnimationValue, {
+      toValue: 56,
+      duration: animationSpeed * 0.7,
+      useNativeDriver: true,
+    });
+  };
+
+  React.useImperativeHandle(ref, () => ({
+    createAndDisplayMonster,
+    userRunToMonster,
+    userBackFromMonster,
+  }));
+
   return (
     <View style={battle.container}>
       <Animated.View style={[userInitAnimationStyle, userOpacityAnimatedStyle]}>
@@ -71,6 +124,14 @@ const Battle = (props) => {
           style={battle.objects.ch}
           resizeMode="contain"
         ></ImageBackground>
+      </Animated.View>
+
+      <Animated.View
+        style={[monsterInitAnimationStyle, monsterOpacityAnimatedStyle]}
+      >
+        <View style={battle.objects.monster}>
+          <Text>몬스터</Text>
+        </View>
       </Animated.View>
 
       <ImageBackground
@@ -84,11 +145,11 @@ const Battle = (props) => {
       ></ImageBackground>
     </View>
   );
-};
+});
 
 const battle = StyleSheet.create({
   container: {
-    height: bottom_frame_height + character_height + grass_height + 40,
+    height: bottom_frame_height + character_height + grass_height + 60,
     justifyContent: "flex-end",
   },
 
@@ -98,6 +159,15 @@ const battle = StyleSheet.create({
       height: 56,
       position: "absolute",
       bottom: -8,
+    },
+    monster: {
+      width: 56,
+      height: 56,
+      position: "absolute",
+      bottom: -8,
+      borderWidth: 2,
+      right: 0,
+      backgroundColor: "red",
     },
     grass: {
       height: grass_height,
@@ -109,79 +179,3 @@ const battle = StyleSheet.create({
 });
 
 export default Battle;
-
-/*
-
-        <ImageBackground
-          source={bg_assets.top}
-          style={{
-            flex: 1,
-            position: "absolute",
-            width: "100%",
-            height: 6,
-            top: 0,
-            zIndex: 3,
-          }}
-          resizeMode="repeat"
-        ></ImageBackground>
-
-        <ImageBackground
-          source={bg_assets.cloud}
-          style={{
-            flex: 1,
-            position: "absolute",
-            width: "100%",
-            height: "100%",
-            zIndex: 1,
-          }}
-        ></ImageBackground>
-
-        <ImageBackground
-          source={bg_assets.sky}
-          style={{
-            flex: 1,
-            position: "absolute",
-            width: "100%",
-            height: "100%",
-            zIndex: 2,
-          }}
-        ></ImageBackground>
-
-        <View
-          style={{
-            height: 32,
-            position: "absolute",
-            width: "100%",
-            bottom: 0,
-            zIndex: 3,
-          }}
-        >
-          <ImageBackground
-            source={bg_assets.bottom}
-            style={{ flex: 1 }}
-          ></ImageBackground>
-        </View>
-
-
-        <Animated.View
-        style={[
-          {
-            zIndex: 4,
-            position: "absolute",
-            bottom: 24,
-            width: 64,
-            height: 64,
-          },
-          userInitAnimationStyle,
-          userOpacityAnimatedStyle,
-        ]}
-      >
-        <ImageBackground
-          source={
-            userAnimationImage === "0" ? ch_assets.moving_0 : ch_assets.moving_1
-          }
-          style={{ flex: 1 }}
-          resizeMode="contain"
-        ></ImageBackground>
-      </Animated.View>
-*/

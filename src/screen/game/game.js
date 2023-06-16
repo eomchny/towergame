@@ -4,19 +4,14 @@ import {
   Animated,
   Text,
   View,
-  Button,
-  TextInput,
   SafeAreaView,
-  ScrollView,
-  TouchableOpacity,
-  Image,
   ImageBackground,
-  Alert,
   Dimensions,
 } from "react-native";
 import { PanResponder } from "react-native";
 import pieceApi from "../../apis/pieceApi";
 import boardApi from "../../apis/boardApi";
+import message from "../../apis/message";
 import Header from "./header";
 import StatusBar from "./status";
 import Battle from "./battle";
@@ -51,7 +46,7 @@ class Game extends Component {
     this.state = {
       user: {
         max_hp: 10,
-        now_hp: 9,
+        now_hp: 10,
       },
       status: {
         attack: 1,
@@ -62,6 +57,7 @@ class Game extends Component {
 
       /*GameInofs*/
       battle: false,
+      battle_ongoing: false,
       floor: 1,
       score: 0,
 
@@ -73,23 +69,35 @@ class Game extends Component {
 
       /*Gamestart*/
       ts: new Date().getTime(),
+
+      /*lang*/
+      lang: "kr",
     };
+
+    this.battleRef = React.createRef();
   }
 
-  upFloor = () => {
+  upFloor = (cb = null) => {
     const up = this.state.floor + 1;
 
-    this.setState({
-      floor: up,
-      battle: up >= 4 ? true : false,
-    });
+    this.setState(
+      {
+        floor: up,
+        battle: up >= 3 ? true : false,
+      },
+      () => {
+        if (cb !== null) {
+          cb();
+        }
+      }
+    );
   };
 
   upScore = (value) => {
     const sc = this.state.score + value;
 
     this.setState({
-      score: sc
+      score: sc,
     });
   };
 
@@ -175,6 +183,77 @@ class Game extends Component {
     });
   };
 
+  userMaxHpUpdate = (value, cb = null) => {
+    const origin = this.state.user.max_hp;
+    const now = this.state.user.now_hp;
+
+    this.setState(
+      (prev) => ({
+        user: {
+          ...prev.user,
+          max_hp: origin + value,
+          now_hp: now + value,
+        },
+      }),
+      () => {
+        if (cb !== null) {
+          cb();
+        }
+      }
+    );
+  };
+
+  runBattle = (monster) => {
+    const userRun = this.battleRef.current?.userRunToMonster();
+    const userBack = this.battleRef.current?.userBackFromMonster();
+    let battle_close = false;
+
+    userRun.start(async () => {
+      /*가까이 가서 공격한다.*/
+      const damege = this.state.status.attack - monster.defend;
+      const user_hp = this.state.user.now_hp + damege;
+      monster.hp = monster.hp - this.state.status.attack;
+
+      await this.setState((prev) => ({
+        user: {
+          ...prev.user,
+          now_hp: user_hp,
+        },
+      }));
+
+      console.log(damege, user_hp, monster.hp);
+
+      //전투가 안끝났으면
+      if (!battle_close) {
+        userBack.start(() => {
+          this.runBattle(monster);
+        });
+      } else {
+        //배틀 결과를 스테이트에 저장
+      }
+    });
+  };
+
+  processBattle = () => {
+    this.setState(
+      {
+        battle_ongoing: true,
+      },
+      () => {
+        const monster = {
+          name: "슬라임",
+          hp: 8,
+          defend: 3,
+        };
+        const motion = this.battleRef.current.createAndDisplayMonster(monster);
+
+        motion.start(() => {
+          this.runBattle(monster);
+        });
+      }
+    );
+  };
+
   render() {
     return (
       <View style={{ flex: 1 }}>
@@ -200,7 +279,7 @@ class Game extends Component {
                   user={this.state.user}
                   statusObjectPositions={this.statusObjectPositions}
                 />
-                <Battle />
+                <Battle ref={this.battleRef} />
               </SafeAreaView>
             </View>
           </ImageBackground>
@@ -210,15 +289,19 @@ class Game extends Component {
             upFloor={this.upFloor}
             upScore={this.upScore}
             battle={this.state.battle}
+            battle_ongoing={this.state.battle_ongoing}
             floor={this.state.floor}
             score={this.state.score}
+            processBattle={this.processBattle}
             /*스탯 업데이트 Props*/
             statusPotions={this.state.statusPotions}
             attackUpdate={this.attackUpdate}
             defendUpdate={this.defendUpdate}
             recoverUpdate={this.recoverUpdate}
             goldUpdate={this.goldUpdate}
+            userMaxHpUpdate={this.userMaxHpUpdate}
             ts={this.state.ts}
+            lang={this.state.lang}
           />
         </View>
       </View>
@@ -246,11 +329,19 @@ class Board extends Component {
       ],
       consider: false,
       consider_element_tr: [null, null],
+      message: "블럭을 설치하십시오.",
     };
 
     this.boardRef = React.createRef();
     this.contollerRef = React.createRef();
     this.bg = require("../../imgs/backgrounds/board/origbig.png");
+  }
+
+  opacity = new Animated.Value(0);
+  animatedX = new Animated.Value(300);
+
+  componentDidMount() {
+    this.showMessage();
   }
 
   componentDidUpdate(prevProps, prevState, snapshot) {
@@ -274,7 +365,29 @@ class Board extends Component {
         board: resetBoard,
       });
     }
+
+    if (prevState.message !== this.state.message) {
+      this.showMessage();
+    }
   }
+
+  showMessage = () => {
+    this.opacity.setValue(0);
+    this.animatedX.setValue(300);
+
+    Animated.parallel([
+      Animated.timing(this.opacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(this.animatedX, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   componentMeasure = async () => {
     this.boardRef.current.measure((fx, fy, width, height, px, py) => {
@@ -311,6 +424,11 @@ class Board extends Component {
   };
 
   releasePiece = (pan, piece, px, py) => {
+    if (this.props.battle_ongoing) {
+      pan.setValue({ x: 0, y: 0 });
+      return;
+    }
+
     const releasePointPx = px + boardSizeDatas.elementWidth / 2;
     const releasePointPy = py + boardSizeDatas.elementWidth / 2;
 
@@ -383,13 +501,11 @@ class Board extends Component {
 
     /*새로운 피스를 생성하고 메인타겟으로 옮긴다.*/
     this.contollerRef.current.createNewPiece();
-
     origin_board = this.elementCompleteCheck(
       origin_board,
       releasedRow,
       releasedCol
     );
-    this.props.upFloor();
     this.setState(
       {
         board: origin_board,
@@ -397,6 +513,29 @@ class Board extends Component {
         consider_element_tr: [releasedRow, releasedCol], //방금 놓은 블럭의 0행 0열 데이터 (무르기 개발 대비)
       },
       () => {
+        /*보드를 업데이트 하고, 전투를 시작한다.*/
+        if (this.props.battle) {
+          if (this.props.floor === 3) {
+            this.setState({
+              message: message.getMessage(this.props.lang, "start_battle"),
+            });
+          }
+
+          this.props.userMaxHpUpdate(1, () => {
+            const win = this.processBattle();
+          });
+        } else {
+          this.props.userMaxHpUpdate(1, () => {
+            this.props.upFloor(() => {
+              this.setState({
+                message: message.getMessage(
+                  this.props.lang,
+                  "phase_" + this.props.floor
+                ),
+              });
+            });
+          });
+        }
         pan.setValue({ x: 0, y: 0 });
       }
     );
@@ -450,31 +589,36 @@ class Board extends Component {
   };
 
   elementCompleteCheck = (board, row, col) => {
-    if (row === boardSize - 1) {
-      return board;
-    }
-
-    if (col === boardSize - 1) {
-      return board;
-    }
-
     for (let r = 0; r <= 1; r++) {
       for (let c = 0; c <= 1; c++) {
-        const el = board[row + r][col + c];
+        if (!board[row + r] || !board[row + r][col + c]) {
+          continue;
+        }
 
+        const el = board[row + r][col + c];
         if (el !== null) {
           const name = el.name;
 
           if (name === "gold") {
-            board = boardApi.checkGold(board, row + r, col + c, (value, score) => {
-              this.props.goldUpdate(value);
-              this.props.upScore(score);
-            });
+            board = boardApi.checkGold(
+              board,
+              row + r,
+              col + c,
+              (value, score) => {
+                this.props.goldUpdate(value);
+                this.props.upScore(score);
+              }
+            );
           } else if (name === "attack") {
-            board = boardApi.checkAttack(board, row + r, col + c, (value, score) => {
-              this.props.attackUpdate(value);
-              this.props.upScore(score);
-            });
+            board = boardApi.checkAttack(
+              board,
+              row + r,
+              col + c,
+              (value, score) => {
+                this.props.attackUpdate(value);
+                this.props.upScore(score);
+              }
+            );
           } else if (name === "defend") {
             board = boardApi.checkDefend(board, row + r, col + c, (value) => {
               this.props.defendUpdate(value);
@@ -491,15 +635,42 @@ class Board extends Component {
     return board;
   };
 
+  processBattle = () => {
+    const battle_result = this.props.processBattle();
+    return battle_result;
+  };
+
   render() {
     return (
       <View style={board.container}>
         <ImageBackground source={this.bg} resizeMode="cover">
+          <View style={board.message.container}>
+            <View style={board.message.mask}></View>
+            <Animated.View
+              style={[
+                board.message.wrap,
+                {
+                  transform: [{ translateX: this.animatedX }],
+                  opacity: this.opacity,
+                },
+              ]}
+            >
+              <Text style={board.message.msg}>{this.state.message}</Text>
+            </Animated.View>
+          </View>
+
           <View
             style={board.main}
             ref={this.boardRef}
             onLayout={this.componentMeasure}
           >
+            {this.props.battle_ongoing ? (
+              <View style={board.ongoing.mask}>
+                <Text style={board.ongoing.text}>Battle</Text>
+              </View>
+            ) : (
+              <></>
+            )}
             {this.getTiles()}
           </View>
         </ImageBackground>
@@ -619,6 +790,7 @@ const Tile = (props) => {
           width: boardSizeDatas.elementWidth,
           height: boardSizeDatas.elementWidth,
           borderWidth: remove ? 4 : 0,
+          zIndex: 20,
         }}
       >
         <ImageBackground
@@ -1162,7 +1334,7 @@ const piece = StyleSheet.create({
   },
   controller: {
     whole: {
-      height: boardSizeDatas.elementWidth * 3,
+      //height: boardSizeDatas.elementWidth * 2.5,
       width: "100%",
       flexDirection: "row",
       flex: 1,
@@ -1185,12 +1357,54 @@ const board = StyleSheet.create({
   },
   main: {
     width: boardSizeDatas.boardWidth,
-    height: boardSizeDatas.boardHeight + 28,
+    height: boardSizeDatas.boardHeight + 12,
     flexDirection: "row",
     flexWrap: "wrap",
     alignSelf: "center",
-    paddingBottom: 14,
-    paddingTop: 14,
+    justifyContent: "center",
+  },
+  message: {
+    container: {
+      marginBottom: 6,
+    },
+    wrap: {
+      marginLeft: 24,
+      marginTop: 6,
+      marginBottom: 6,
+    },
+    msg: {
+      color: "#f5f5dc",
+      fontSize: 16,
+    },
+    mask: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      backgroundColor: "black",
+      height: "100%",
+      width: "100%",
+      opacity: 0.7,
+    },
+  },
+  ongoing: {
+    mask: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: boardSizeDatas.boardHeight,
+      height: boardSizeDatas.boardHeight,
+      backgroundColor: "black",
+      opacity: "0.6",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 50,
+      borderRadius: 6,
+    },
+    text: {
+      color: "#f5f5dc",
+      fontSize: 55,
+      fontFamily: "Dungeon",
+    },
   },
 });
 
